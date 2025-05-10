@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.2) (preloaded format=pdflatex 2025.5.10)  10 MAY 2025 18:34
+This is pdfTeX, Version 3.141592653-2.6-1.40.27 (MiKTeX 25.2) (preloaded format=pdflatex 2025.5.10)  10 MAY 2025 18:41
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -329,8 +329,7 @@ ftex.def
 File: l3backend-pdftex.def 2024-05-08 L3 backend support: PDF output (pdfTeX)
 \l__color_backend_stack_int=\count298
 \l__pdf_internal_box=\box54
-)
-No file 06010567-math70076-assessment-2-summary.aux.
+) (06010567-math70076-assessment-2-summary.aux)
 \openout1 = `06010567-math70076-assessment-2-summary.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 29.
@@ -351,6 +350,7 @@ LaTeX Font Info:    Checking defaults for PD1/pdf/m/n on input line 29.
 LaTeX Font Info:    ... okay on input line 29.
 LaTeX Font Info:    Checking defaults for PU/pdf/m/n on input line 29.
 LaTeX Font Info:    ... okay on input line 29.
+
 *geometry* driver: auto-detecting
 *geometry* detected driver: pdftex
 *geometry* verbose mode - [ preamble ] result:
@@ -422,12 +422,15 @@ Package color Info: Driver file: pdftex.def on input line 149.
 (C:\Users\LENOVO\AppData\Local\Programs\MiKTeX\tex/latex/graphics\mathcolor.ltx
 ))
 Package hyperref Info: Link coloring ON on input line 29.
+ (06010567-math70076-assessment-2-summary.out)
+(06010567-math70076-assessment-2-summary.out)
 \@outlinefile=\write3
 \openout3 = `06010567-math70076-assessment-2-summary.out'.
 
 LaTeX Font Info:    Trying to load font information for U+msa on input line 32.
 
- (C:\Users\LENOVO\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
+
+(C:\Users\LENOVO\AppData\Local\Programs\MiKTeX\tex/latex/amsfonts\umsa.fd
 File: umsa.fd 2013/01/14 v3.01 AMS symbols A
 )
 LaTeX Font Info:    Trying to load font information for U+msb on input line 32.
@@ -466,23 +469,15 @@ Overfull \hbox (3.3086pt too wide) in paragraph at lines 57--58
 LaTeX2e <2024-11-01> patch level 2
 L3 programming layer <2025-01-18>
  ***********
-
-
-Package rerunfilecheck Warning: File `06010567-math70076-assessment-2-summary.o
-ut' has changed.
-(rerunfilecheck)                Rerun to get outlines right
-(rerunfilecheck)                or use package `bookmark'.
-
-Package rerunfilecheck Info: Checksums for `06010567-math70076-assessment-2-sum
-mary.out':
-(rerunfilecheck)             Before: <no file>
-(rerunfilecheck)             After:  4BD8246FF0AD7D2B67242F3B6049F9BA;533.
+Package rerunfilecheck Info: File `06010567-math70076-assessment-2-summary.out'
+ has not changed.
+(rerunfilecheck)             Checksum: 4BD8246FF0AD7D2B67242F3B6049F9BA;533.
  ) 
 Here is how much of TeX's memory you used:
- 10705 strings out of 473522
- 164970 string characters out of 5714125
- 569192 words of memory out of 5000000
- 33804 multiletter control sequences out of 15000+600000
+ 10717 strings out of 473522
+ 165543 string characters out of 5714125
+ 569320 words of memory out of 5000000
+ 33810 multiletter control sequences out of 15000+600000
  563630 words of font info for 54 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  69i,6n,79p,578b,438s stack positions out of 10000i,1000n,20000p,200000b,200000s
@@ -492,10 +487,10 @@ onts/cm/cmbx12.pfb><C:/Users/LENOVO/AppData/Local/Programs/MiKTeX/fonts/type1/p
 ublic/amsfonts/cm/cmr12.pfb><C:/Users/LENOVO/AppData/Local/Programs/MiKTeX/font
 s/type1/public/amsfonts/cm/cmr17.pfb><C:/Users/LENOVO/AppData/Local/Programs/Mi
 KTeX/fonts/type1/public/amsfonts/cm/cmti12.pfb>
-Output written on 06010567-math70076-assessment-2-summary.pdf (3 pages, 78334 b
+Output written on 06010567-math70076-assessment-2-summary.pdf (3 pages, 79498 b
 ytes).
 PDF statistics:
- 51 PDF objects out of 1000 (max. 8388607)
+ 61 PDF objects out of 1000 (max. 8388607)
  7 named destinations out of 1000 (max. 500000)
- 1 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 25 words of extra memory for PDF output out of 10000 (max. 10000000)
 
