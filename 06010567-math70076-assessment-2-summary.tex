@@ -1,0 +1,131 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%% PREAMBLE
+
+\documentclass[a4paper, 12pt]{article}
+
+% General document formatting
+\usepackage[margin=1.25in]{geometry}
+\usepackage[parfill]{parskip}
+\usepackage[utf8]{inputenc}
+
+% Figures
+\usepackage{graphicx}
+\usepackage[section]{placeins} 
+% References 
+\usepackage[authoryear,round]{natbib}
+    
+% Related to math
+\usepackage{amsmath,amssymb,amsfonts,amsthm}
+
+% Hyperlinks
+\usepackage[colorlinks]{hyperref}
+
+% Author details
+\title{Explore the Relationship Between Global Female Education Levels and Fertility Rates}
+\author{06010567}
+\date{Compiled: \today}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\begin{document}
+
+\maketitle
+
+\textbf{Github Repo:} \href{https://github.com/zakvarty/eds-notes-quarto/releases/tag/v1.2.0-alpha}{\color{blue}{REPLACE-WITH-LINK-TO-YOUR-TAGGED-RELEASE}}
+
+\section{Project Description (approx. 250 words)}
+
+
+This project investigates the relationship between female education and fertility rates globally from 2000 to 2023. Motivated by demographic and development policy implications, the project leverages data from the World Bank (WDI) and UNDP Human Development Report (HDR), incorporating indicators such as fertility, female education at multiple levels, GDP, urbanisation, labour participation, contraceptive prevalence, and gender equality metrics.
+
+The data pipeline includes robust wrangling, interpolation-based imputation, and feature engineering (e.g., log-transformed GDP). Exploratory analysis reveals strong negative associations between education and fertility, with notable variation across income groups and continents.
+
+Modeling is conducted via multivariate linear models and panel regressions using `plm` in R. Interaction terms (e.g., income group × education) highlight heterogeneous effects. Model predictions are visualised to illustrate policy-relevant thresholds and scenarios.
+
+A Shiny app allows users to explore education–fertility trends interactively by country and year. The app includes scatter plots with optional linear trend lines, world maps, radar profiles of gender-related indicators, and a simple simulation-based forecasting feature for 2024–2026 based on user-defined inputs.
+
+The project is fully reproducible with a `make.R` script, and documented through modular scripts, structured folders, and an annotated `README.md`. Overall, the product combines analytical depth, usability, and reproducibility to support insight generation for global education and fertility dynamics.
+
+%=============================================
+\pagebreak
+%=============================================
+
+\section{Assessment Criteria}
+
+\textbf{Technical Competence:} Proficiency in data collection, processing, analysis, and coding.
+
+\begin{itemize}
+    \item Integrated and cleaned panel data using `WDI`, `readxl`, and `zoo::na.approx`, generating new variables (e.g., log-GDP).
+    \item Built linear and panel regression models with interactions to account for heterogeneous effects.
+\end{itemize}
+
+\textbf{User Interface:} Design, functionality, and usability of the final data product.
+
+\begin{itemize}
+    \item Designed a Shiny app with tabs for trend analysis, mapping, radar profile, and statistical summary.
+    \item Allowed users to simulate forecasts for 2024–2026 based on editable socio-demographic parameters.
+\end{itemize}
+
+\textbf{Analysis and Interpretation:} Depth of analysis, appropriate use of statistical methods, and meaningful interpretation.
+
+\begin{itemize}
+    \item Identified strong inverse associations between education and fertility, with variation across income groups.
+    \item Used modeling outputs and `ggeffects` to interpret nonlinear and interactive effects in accessible form.
+\end{itemize}
+
+\textbf{Presentation and Communication:} Clarity, organisation and effectiveness of written and visual communication.
+
+\begin{itemize}
+    \item Organised all deliverables into a clear file structure, rendered with `bookdown`, and summarised via Markdown and LaTeX.
+    \item Produced clear plots with appropriate color schemes, labels, and interactive enhancements (e.g., Plotly).
+\end{itemize}
+
+\textbf{Reproducibility and Documentation:} Clarity and completeness of documentation for product use and reproducibility.
+
+\begin{itemize}
+    \item Complete pipeline automation via `make.R`; modular and readable R scripts.
+    \item Clear `README.md` with setup instructions, dependency list, and visual project tree.
+\end{itemize}
+
+\textbf{Project Management:} Considered and effective use of project management and version control systems.
+
+\begin{itemize}
+    \item Managed progress in stages (data, EDA, modelling, dashboard), with each part committed to GitHub.
+    \item Final product released as tagged GitHub version and zipped project archive.
+\end{itemize}
+
+%=============================================
+\pagebreak
+%=============================================
+
+\section{Project Reflection}
+
+\textit{Reflect on the experience of creating your data product. In 6 bullet points and at most 1 page total, summarise the following.} 
+
+\begin{itemize}
+    \item \textit{3 things you have learned as part of this process,}
+    \item \textit{2 aspects of the project that you found challenging or would approach differently with hindsight,} 
+    \item \textit{1 aspect of the project that you would like to learn more about in the future.}
+\end{itemize}
+
+\textbf{Learnings:}
+
+\begin{itemize}
+    \item I deepened my understanding of how to build and validate panel regression models using `plm`.
+    \item I learned how to design and deploy an interactive Shiny dashboard that integrates modeling and forecasting.
+    \item I improved my ability to clean and impute real-world multi-source data with non-trivial structure.
+\end{itemize}
+
+\textbf{Challenges:}
+
+\begin{itemize}
+    \item Balancing generalisability and overfitting in panel models with interactions was difficult.
+    \item Designing intuitive but flexible UI components in Shiny required several iterations and testing.
+\end{itemize}
+
+\textbf{Further Development:}
+
+\begin{itemize}
+    \item I would like to explore dynamic panel models and more advanced forecasting techniques for longitudinal data.
+\end{itemize}
+
+\end{document}

@@ -1,0 +1,271 @@
+---
+title: | 
+  | 04_Modelling
+author: '06010567'
+output:
+  bookdown::pdf_book:
+    keep_tex: yes
+  bookdown::html_document2:
+    toc: yes
+    toc_float: yes
+    highlight: tango
+  html_document:
+    toc: yes
+    df_print: paged
+link-citations: true
+---
+
+<style type="text/css">
+h1{
+  font-size: 24pt;
+}
+h2{
+  font-size: 18pt;
+}
+body{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include = FALSE, tidy=TRUE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+include_solutions <- TRUE
+
+require(rmarkdown)
+require(knitr)
+require(kableExtra)
+# Put any library imports and other preamble here.
+require(here)
+require(tidyverse)
+require(car)
+require(sandwich)
+require(lmtest)
+require(ggeffects)
+require(plm)
+require(tibble)
+```
+
+```{r data, echo=FALSE}
+df_2023 <- read_csv(here::here("01_data", "clean", "merged_clean.csv"), show_col_types = FALSE) %>%
+  filter(year == 2023)
+df_2023 <- df_2023 %>%
+  mutate(income = factor(income,
+                         levels = c("Low income", "Lower middle income", "Upper middle income", "High income")))
+
+df <- read_csv(here::here("01_data", "clean", "merged_clean.csv"), show_col_types = FALSE)
+```
+
+Firstly, we will focus on the most recent year data (2023). I include all potential associated variables in the first model.
+Model1: \[
+\begin{aligned}
+\text{fertility} =\ & \alpha + \beta_1 \cdot \text{region} + \beta_2 \cdot \text{income} + \beta_3 \cdot \text{edu}_{\text{upper}} + \beta_4 \cdot \text{urban} + \beta_5 \cdot \text{female}_{\text{labor}} \\
+& + \beta_6 \cdot \text{contraceptive} + \beta_7 \cdot \text{eys}_f + \beta_8 \cdot \text{gii} + \beta_9 \cdot \text{mmr} + \beta_{10} \cdot \text{pr}_f + \beta_{11} \cdot \log(\text{gdp})
+\end{aligned}
+\]
+
+```{r model1, echo=FALSE}
+model1 <- lm(fertility ~ region + income + edu_upper + urban + female_labor + contraceptive + eys_f + gii + mmr + pr_f + log_gdp, data = df_2023)
+summary(model1)
+vif(model1)
+```
+
+This full model includes all theoretically motivated predictors. However, several predictors show weak or insignificant effects, and VIFs suggest moderate multicollinearity, particularly between log(GDP), education, and GII. `gii` is temporarily kept as it is significantly associated with the response.
+
+We can see that `region` has 7 levels. To reduce the number of region categories while preserving structural variation, we performed hierarchical clustering on average region-level values of key indicators. The resulting three-cluster groups regions with similar socioeconomic and gender characteristics. Figure \@ref(fig:cluster) is the visualisation of clustering.
+
+```{r cluster, echo=FALSE, fig.cap="Dendogram of region", fig.pos="H", fig.width=5, fig.height=4.5}
+region_summary <- df %>%
+  filter(year == 2023) %>%
+  group_by(region) %>%
+  summarise(across(c(fertility, edu_upper, gdp, contraceptive, gii, mmr, pr_f), ~ mean(.x, na.rm = TRUE)))
+
+d <- dist(region_summary[-1] %>% scale())
+hc <- hclust(d)
+
+plot(hc, labels = region_summary$region, main = "Hierarchical clustering of regions")
+```
+
+We remove variables with persistently weak explanatory power (`urban`, `mmr`, `female_labor`) and replace `region` with the clustered `region_group`. This reduced model retains strong interpretability and maintains high explanatory strength.
+Model2: $$fertility = \alpha + \beta_1region_{group}+\beta_2income+\beta_3edu_{upper}+\beta_4contraceptive+\beta5gii+\beta_6pr_f$$
+
+```{r model2, echo=FALSE}
+region_group <- factor(case_when(
+  df_2023$region %in% c("Europe & Central Asia", "North America") ~ "C1",
+  df_2023$region %in% c("Sub-Saharan Africa") ~ "C2",
+  TRUE ~ "C3"
+))
+
+model2 <- lm(fertility ~ region_group + income + edu_upper + contraceptive + gii + pr_f, data = df_2023)
+summary(model2)
+```
+
+I also tried `log_gdp` instead of `income` to see the differences.
+Model3: $$fertility = \alpha + \beta_1region_{group}+\beta_2log_{gdp}+\beta_3edu_{upper}+\beta_4contraceptive+\beta5gii+\beta_6pr_f$$
+
+```{r model3, echo=FALSE}
+model3 <- lm(fertility ~ region_group + log_gdp + edu_upper +  contraceptive + gii + pr_f, data = df_2023)
+summary(model3)
+```
+
+Income shows more consistent significance and interpretability than log(GDP), despite slightly higher degrees of freedom. We choose to retain income in models focused on demographic and social heterogeneity.
+
+Then I compared the two education related covariates through Model2 and Model4:
+Model4: $$fertility = \alpha + \beta_1region_{group}+\beta_2income+\beta_3eys_f+\beta_4contraceptive+\beta5gii+\beta_6pr_f$$
+
+```{r model4, echo=FALSE}
+model4 <- lm(fertility ~ region_group + income + eys_f + contraceptive + gii + pr_f, data = df_2023)
+summary(model4)
+```
+
+Including both `edu_upper` and `eys_f` introduces some redundancy. We avoid including both in the same final model to reduce multicollinearity. While both `edu_upper` (attainment-based) and `eys_f` (expectation-based) indicators are associated with fertility outcomes, we choose to retain `edu_upper` in the main specification due to its stronger interpretability and policy relevance. Unlike expected years of schooling, which is a projection subject to assumptions about school-age enrollment patterns, `edu_upper` represents the observed percentage of women aged 25 and above who have completed at least upper secondary education. This makes it a more concrete and retrospective measure of educational attainment. Moreover, `edu_upper` is more directly aligned with education policy targets and is consistently reported and tracked in the World Bank’s World Development Indicators (WDI), enhancing reproducibility and future comparability. It also serves as a clearer proxy for structural shifts in female human capital that can influence long-term fertility behaviour. Therefore, for clarity and policy relevance, we adopt `edu_upper` in the main model.
+
+As I said in the EDA, there may be potential interaction effect of education and income, so I add the interaction term in the following models.
+Model5: $$fertility = \alpha + \beta_1region_{group}+\beta_2income+\beta_3edu_{upper}+\beta_4contraceptive+\beta5gii+\beta_6pr_f+\beta_7income*edu_{upper}$$
+
+```{r model5, echo=FALSE}
+model5 <- lm(fertility ~ region_group + income * edu_upper + contraceptive + gii + pr_f, data = df_2023)
+summary(model5)
+
+anova(model2, model5)
+```
+
+Education appears to reduce fertility more strongly in lower-income countries. The interaction term is significant, suggesting heterogeneous marginal effects. The results of the model and the anova test show that the interaction term is useful.
+
+I also check the other two income-related and education-related variables.
+Model6: $$fertility = \alpha + \beta_1region_{group}+\beta_2log_{gdp}+\beta_3eys_f+\beta_4contraceptive+\beta5gii+\beta_6pr_f+\beta_7log_{gdp}*eys_f$$
+
+```{r model6, echo=FALSE}
+model6 <- lm(fertility ~ region_group + log_gdp * eys_f + contraceptive + gii + pr_f, data = df_2023)
+summary(model6)
+```
+
+The interaction between log(GDP) and expected years of schooling is highly significant. This suggests the educational context modifies the fertility-income relationship, especially in high-growth or highly educated countries.
+
+Across all models, the most consistently significant predictors are contraceptive prevalence, GII, and women's political representation (PR_F). We also find strong support for education × income/GDP interactions. Subsequent forecasting or causal modelling can benefit from stratifying by these interactions.
+
+To account for different aspects of female education, we explored both attainment-based (edu_upper) and expectation-based (eys_f) models. While model5 shows slightly better adjusted R-squared, both models point to a significant interaction between education and economic development. In practice, we adopt model5 for clarity, but validate our results against model6 as a robustness check.
+
+Based on adjusted R-squared, AIC, and BIC, Model5 outperforms all other candidate models (shown is Table \@ref(tab:compare)). It achieves the highest adjusted R-squared (0.872), the lowest AIC (177.56), and maintains competitive BIC compared to simpler models. This indicates that accounting for heterogeneity in the education–fertility relationship across income groups yields superior explanatory power.
+
+```{r compare, echo=FALSE}
+model_comparison <- tibble(
+  Model = c("Model 2 (edu_upper)", "Model 4 (eys_f)", "Model 5", "Model 6"),
+  Adj_R2 = c(
+    summary(model2)$adj.r.squared,
+    summary(model4)$adj.r.squared,
+    summary(model5)$adj.r.squared,
+    summary(model6)$adj.r.squared
+  ),
+  AIC = c(AIC(model2), AIC(model4), AIC(model5), AIC(model6)),
+  BIC = c(BIC(model2), BIC(model4), BIC(model5), BIC(model6))
+)
+
+kable(model_comparison, digits = 3, caption = "Model Comparison Summary") %>%
+  kable_styling(full_width = FALSE)
+```
+
+Figure \@ref(fig:diagnostic) shows the visualisation of the assessment of model5. Residual plots for Model 5 show no strong violations of linear regression assumptions. Residuals are approximately centered, with mild deviation in the QQ plot suggesting light right-skewness or a few outliers. The Scale-Location plot reveals a minor increase in variance with fitted values, indicating mild heteroscedasticity. A few high-leverage points are observed but do not appear to overly influence the model. Overall, the model performs well under classical linear regression assumptions.
+
+```{r diagnostic, echo=FALSE, fig.cap="Diagnostic plot of model5", fig.pos="H", fig.width=5, fig.height=5}
+par(mfrow = c(2, 2))
+plot(model5)
+```
+
+```{r test, echo=FALSE}
+coeftest(model5, vcov = vcovHC(model5, type = "HC1"))
+```
+
+The differences between the default summary() output and the robust coeftest() results suggest that the original model may exhibit mild heteroskedasticity, and robust inference helps confirm which variables remain reliable under relaxed assumptions. The main interpretation — that education's effect on fertility is stronger in low-income regions — remains robust.
+
+Female education significantly reduces fertility in low-income countries, but this effect diminishes with rising national income. This suggests that education-based interventions may be most effective in high-fertility, low-income contexts, whereas more complex socioeconomic strategies may be required elsewhere.
+
+Figure \@ref(fig:inter) shows that female education significantly reduces fertility in low-income countries, but this effect diminishes with rising national income. This suggests that education-based interventions may be most effective in high-fertility, low-income contexts, whereas more complex socioeconomic strategies may be required elsewhere.
+
+```{r inter, echo=FALSE, fig.cap="Diagnostic plot of model5", fig.pos="H", fig.width=5, fig.height=3}
+interaction_effect <- ggpredict(model5, terms = c("edu_upper", "income"))
+plot(interaction_effect) +
+  theme_minimal() +
+  labs(
+    title = "Interaction Effect of Education and Income on Fertility",
+    x = "Female Upper Secondary Education (% of 25+)",
+    y = "Predicted Fertility Rate"
+  )
+```
+
+While Model5 performs well under classical linear regression assumptions, some extensions may help address structural and temporal complexities, for example: Panel Modelling (PLM). Since we have panel data, we will next incorporate fixed and random effects to account for unobserved country-specific heterogeneity.
+
+While the cross-sectional models provide important insights, they capture only a static snapshot from 2023. Since the dataset spans over 20 years for most countries, we leverage panel data methods to explore whether the relationships between fertility, education, and economic development persist over time.
+
+For panel modelling, we retain the key covariates from Model5, focusing on female upper secondary education, income group, and their interaction, along with consistent controls (contraceptive prevalence, gender inequality, and women’s political representation). These variables demonstrate both theoretical relevance and sufficient variation over time, making them appropriate for longitudinal modelling. Region grouping is excluded in panel models, as country-specific unobserved heterogeneity is captured through fixed or random effects.
+
+I explored the fixed-effect model and random-effect model, and then I used the Hausman test to check the preference. Fixed effects models allow us to control for time-invariant country-level heterogeneity, while random effects models can yield greater efficiency under appropriate assumptions. The Hausman test guides model selection.
+
+```{r plm, echo=FALSE}
+df_panel <- df %>%
+  filter(!is.na(fertility), !is.na(edu_upper), !is.na(income), !is.na(pr_f)) %>%
+  mutate(income = factor(income))
+
+plm_model1 <- plm(
+  fertility ~ income * edu_upper + contraceptive + gii + pr_f,
+  data = df_panel,
+  index = c("iso3c", "year"),
+  model = "within"
+)
+summary(plm_model1)
+
+plm_model2 <- plm(
+  fertility ~ income * edu_upper + contraceptive + gii + pr_f,
+  data = df_panel,
+  index = c("iso3c", "year"),
+  model = "random"
+)
+summary(plm_model2)
+
+phtest(plm_model1, plm_model2)
+```
+
+The p-value is smaller than 0.05, so I can reject the null hypothesis, which means that the fix-effect model is more appropriate to adopt.
+
+While the baseline fixed-effects model focuses on the core explanatory variables drawn from cross-sectional analysis, we also construct an extended model incorporating additional time-varying structural variables—urbanisation, maternal mortality, and female labour force participation. These variables were excluded in the initial cross-sectional specifications due to limited variability, but become informative in a panel setting.
+
+```{r plmextend, echo=FALSE}
+plm_model3 <- plm(
+  fertility ~ income * edu_upper + contraceptive + gii + pr_f + urban + mmr + female_labor,
+  data = df_panel,
+  index = c("iso3c", "year"),
+  model = "within"
+)
+summary(plm_model3)
+```
+
+Table \@ref(tab:plmcompare) indicates that the extended fixed effects model outperforms the baseline specification across all key diagnostic metrics. It achieves a substantially higher adjusted R-squared and a lower residual sum of squares, indicating better overall model fit. Importantly, the inclusion of additional structural controls—urbanisation, maternal mortality (MMR), and female labour force participation—not only enhances explanatory power but also preserves the significance of the core interaction between income and female education. This suggests that the education–fertility relationship is robust to the inclusion of broader development indicators and may be influenced by institutional and demographic factors beyond education and economic status alone.
+
+```{r plmcompare, echo=FALSE}
+baseline_summary <- summary(plm_model1)
+extended_summary <- summary(plm_model3)
+
+is_interaction_sig <- function(model) {
+  coefs <- coef(summary(model))
+  interaction_rows <- grepl("income.*edu_upper", rownames(coefs))
+  any(coefs[interaction_rows, "Pr(>|t|)"] < 0.05)
+}
+
+plm_compare_tbl <- tibble(
+  Model = c("Baseline FE", "Extended FE"),
+  `R2` = c(baseline_summary$r.squared["rsq"], extended_summary$r.squared["rsq"]),
+  `Residual SS` = c(deviance(plm_model1), deviance(plm_model3)),
+  `Significant Interaction?` = c(ifelse(is_interaction_sig(plm_model1), "Yes", "No"),
+                                 ifelse(is_interaction_sig(plm_model3), "Yes", "No")),
+  `Additional Variables` = c("None", "urban, mmr, female_labor")
+)
+
+kable(plm_compare_tbl, digits = 3, caption = "Comparison of Baseline and Extended Fixed Effects Panel Models") %>%
+  kable_styling(full_width = FALSE, position = "center")
+```
+
+Our modelling strategy begins with cross-sectional linear models and proceeds to panel models with fixed effects. Across all models, contraceptive prevalence, gender inequality (GII), and female education emerge as the most robust predictors of fertility.
+
+Interaction effects between income and female education are statistically significant and consistent across specifications. Panel modelling confirms the robustness of this relationship over time. Furthermore, additional socioeconomic indicators — such as MMR and urbanisation — improve model fit while preserving core conclusions.

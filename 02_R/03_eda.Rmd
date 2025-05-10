@@ -1,0 +1,293 @@
+---
+title: | 
+  | 03_Exploratory_Data_Analysis
+author: '06010567'
+output:
+  bookdown::pdf_book:
+    keep_tex: yes
+  bookdown::html_document2:
+    toc: yes
+    toc_float: yes
+    highlight: tango
+  html_document:
+    toc: yes
+    df_print: paged
+link-citations: true
+---
+
+<style type="text/css">
+h1{
+  font-size: 24pt;
+}
+h2{
+  font-size: 18pt;
+}
+body{
+  font-size: 12pt;
+}
+</style>
+
+```{r setup, include = FALSE, tidy=TRUE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+include_solutions <- TRUE
+
+require(rmarkdown)
+require(knitr)
+require(kableExtra)
+# Put any library imports and other preamble here.
+require(here)
+require(tidyverse)
+require(ggthemes)
+require(ggrepel)
+require(viridis)
+require(corrplot)
+require(sf)
+require(rnaturalearth)
+require(rnaturalearthdata)
+require(gridExtra)
+require(ggfortify)
+```
+
+```{r data, echo=FALSE}
+# Read cleaned dataset
+df <- read_csv(here::here("01_data", "clean", "merged_clean.csv"), show_col_types = FALSE)
+```
+
+Firstly, I read the cleaned dataset for further analysis. Then, I use a choropleth map to show an overview of the fertility rate around the world in 2023.
+
+The choropleth map illustrates substantial global variation in fertility rates. Sub-Saharan Africa exhibits the highest fertility levels, often exceeding 5 births per woman, while Europe, East Asia, and North America maintain significantly lower fertility, often below 2. This visualisation emphasises the demographic divide between high- and low-income regions and highlights where population growth remains most rapid.
+
+```{r fermap, echo=FALSE, fig.cap="Choropleth map of the fertility rate across the world (2023)"}
+world <- ne_countries(scale = "medium", returnclass = "sf")
+
+df_map <- df %>%
+  filter(year == 2023) %>%
+  select(iso_a3 = iso3c, fertility, edu_upper)
+
+world_data <- left_join(world, df_map, by = "iso_a3")
+
+ggplot(world_data) +
+  geom_sf(aes(fill = fertility)) +
+  scale_fill_viridis_c(option = "plasma", na.value = "grey90") +
+  theme_minimal() +
+  labs(title = "Global Fertility Rate (2023)", fill = "Births per woman")
+```
+
+From Table \@ref(tab:2023summary), we can see that there are still some missing values even after doing imputation. This happens because that some countries do not have any data of some variables, which means that imputation does not work. Therefore, I will drop these rows containing missing values in some parts of analysis as they account for a small proportion.
+
+```{r 2023summary, echo=FALSE,, results='asis'}
+df_2023 <- df %>%
+  filter(year == 2023) %>%
+  select(fertility, edu_upper, gdp, urban, female_labor,
+         contraceptive, gii, mmr, pr_f)
+
+kable(summary(df_2023), format = "latex", digits = 3, booktabs = TRUE, caption = "Summary statistics for year 2023") %>%
+  kable_styling(latex_options = c("scale_down"), font_size = 7)
+```
+
+$$\newline$$
+
+Figure \@ref(fig:edufer) reveals a clear negative relationship between female upper secondary education and fertility rate across countries in 2023. Higher levels of female education are associated with lower fertility rates, especially in high-income countries, where education levels are the highest and fertility the lowest.
+
+```{r edufer, echo=FALSE, fig.cap="Scatter plot of female education and fertility rate (2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  filter(year == 2023, !is.na(fertility), !is.na(edu_upper), !is.na(income)) %>%
+  ggplot(aes(x = edu_upper, y = fertility)) +
+  geom_point(aes(color = income), alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "black", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Female Education vs Fertility Rate (2023)",
+    x = "Female Upper Secondary Education (% of 25+)",
+    y = "Fertility Rate (births per woman)",
+    color = "Income Group"
+  ) + scale_color_brewer(palette = "Set2")
+```
+
+Figure \@ref(fig:eysfscatter) demonstrates a strong negative relationship between the expected years of schooling (female) and fertility rate. Countries with longer education tend to have substantially lower fertility.
+
+```{r eysfscatter, echo=FALSE, fig.cap="Scatter plot of expected years of schooling (female) and fertility rate (2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  filter(year == 2023, !is.na(eys_f), !is.na(fertility), !is.na(income)) %>%
+  ggplot(aes(x = eys_f, y = fertility)) +
+  geom_point(aes(color = income), alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "black", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Expected Schooling, female (years) vs Fertility Rate (2023)",
+    x = "Expected Years of Schooling, female (years)",
+    y = "Fertility Rate (births per woman)",
+    color = "Income Group"
+  ) +
+  scale_color_brewer(palette = "Set1")
+```
+
+Figure \@ref(fig:giiscatter) demonstrates a strong positive relationship between the Gender Inequality Index and fertility rate. Countries with greater gender inequality—reflected by higher GII values—tend to have substantially higher fertility. This relationship is particularly evident among low- and lower-middle-income countries, suggesting that limited access to education, employment, and reproductive autonomy may contribute to elevated fertility levels.
+
+```{r giiscatter, echo=FALSE, fig.cap="Scatter plot of GII and fertility rate (2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  filter(year == 2023, !is.na(gii), !is.na(fertility), !is.na(income)) %>%
+  ggplot(aes(x = gii, y = fertility)) +
+  geom_point(aes(color = income), alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "black", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Gender Inequality Index (GII) vs Fertility Rate (2023)",
+    x = "Gender Inequality Index (GII)",
+    y = "Fertility Rate (births per woman)",
+    color = "Income Group"
+  ) +
+  scale_color_brewer(palette = "Set1")
+```
+
+$$\newline$$
+
+Figure \@ref(fig:mmrscatter) shows a similar pattern between MMR and fertility. There is a steep positive gradient: countries with high maternal mortality also tend to have high fertility. The use of a log scale on the x-axis reveals that this relationship is non-linear, with the most dramatic contrasts occurring among countries with MMR above 100 per 100,000 live births. This indicates a shared vulnerability: countries with insufficient maternal health services often also have high population growth pressures.
+
+```{r mmrscatter, echo=FALSE, fig.cap="Scatter plot of MMR and fertility rate (2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  filter(year == 2023, !is.na(mmr), !is.na(fertility), !is.na(income)) %>%
+  ggplot(aes(x = mmr, y = fertility)) +
+  geom_point(aes(color = income), alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", formula = y ~ x, se = FALSE, color = "black", linetype = "dashed") +
+  scale_x_continuous(trans = "log10", labels = scales::comma) +
+  theme_minimal() +
+  labs(
+    title = "Maternal Mortality Ratio (MMR) vs Fertility Rate (2023)",
+    x = "Maternal Mortality Ratio (log scale)",
+    y = "Fertility Rate",
+    color = "Income Group"
+  ) +
+  scale_color_brewer(palette = "Set1")
+```
+
+Figure \@ref(fig:prfscatter) shows a mild negative association between the share of women in national parliaments and fertility rates. While the relationship is weaker than with GII or MMR, it suggests that political representation of women may play a subtle but meaningful role in influencing social policy, gender norms, and eventually reproductive behaviour.
+
+```{r prfscatter, echo=FALSE, fig.cap="Scatter plot of proportion of female parliament seats and fertility rate (2023)", fig.pos="H", fig.width=5, fig.height=3, warning=FALSE}
+df %>%
+  filter(year == 2023, !is.na(pr_f), !is.na(fertility), !is.na(income)) %>%
+  ggplot(aes(x = pr_f, y = fertility)) +
+  geom_point(aes(color = income), alpha = 0.7, size = 2) +
+  geom_smooth(method = "lm", formula = 'y ~ x', se = FALSE, color = "black", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Female Parliament Seats (%) vs Fertility Rate (2023)",
+    x = "Female Share in Parliament (%)",
+    y = "Fertility Rate",
+    color = "Income Group"
+  ) +
+  scale_color_brewer(palette = "Set1")
+```
+
+Figure \@ref(fig:interactioneffect) shows that the negative association between female upper secondary education and fertility is strongest in low-income countries. As the level of education increases, fertility rates drop sharply in these contexts. In contrast, the slope becomes progressively flatter in higher-income groups, indicating a weaker marginal effect of education on fertility. This pattern suggests that while expanding access to secondary education remains a powerful lever for fertility reduction in low-income countries, its effectiveness diminishes in wealthier settings, where fertility may be influenced by a broader set of structural and normative factors. Hence, this relationship requires further analysis in the future modelling step.
+
+```{r interactioneffect, echo=FALSE, fig.cap="Relationship between education and fertility rate (2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  filter(year == 2023, !is.na(edu_upper), !is.na(income), !is.na(fertility)) %>%
+  ggplot(aes(x = edu_upper, y = fertility, color = income)) +
+  geom_point(alpha = 0.6) +
+  geom_smooth(method = "lm", formula = 'y ~ x', se = FALSE) +
+  theme_minimal() +
+  labs(
+    title = "Interaction Effect of Education and Income on Fertility",
+    x = "Female Upper Secondary Education (% of 25+)",
+    y = "Fertility Rate",
+    color = "Income Group"
+  )
+```
+
+From Figure \@ref(fig:edutrends), we can see that across all world regions, average female upper secondary education levels have been steadily increasing from 2000 to 2023. North America, Europe and Central Asia lead in educational attainment, while Sub-Saharan Africa and South Asia lag behind but show gradual improvements.
+
+```{r edutrends, echo=FALSE, fig.cap="Female education trends plot over regions (2000-2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  group_by(region, year) %>%
+  summarise(
+    avg_edu = mean(edu_upper, na.rm = TRUE),
+    avg_fer = mean(fertility, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = year, y = avg_edu, color = region)) +
+  geom_line(linewidth = 1.2) +
+  theme_minimal() +
+  labs(
+    title = "Female Education Over Time by Region",
+    x = "Year",
+    y = "Avg % Female with Upper Secondary Education",
+    color = "Region"
+  ) + scale_color_brewer(palette = "Set2")
+```
+
+$$\newline$$
+
+Fertility rates have declined across all regions over the past two decades (Figure \@ref(fig:fertrends)). Sub-Saharan Africa maintains the highest fertility, though it is decreasing. In contrast, North America, Europe and Central Asia maintain consistently low fertility rates, suggesting regional differences in demographic transition pace.
+
+```{r fertrends, echo=FALSE, fig.cap="Fertility rate trends plot over regions (2000-2023)", fig.pos="H", fig.width=5, fig.height=3}
+df %>%
+  group_by(region, year) %>%
+  summarise(
+    avg_edu = mean(edu_upper, na.rm = TRUE),
+    avg_fer = mean(fertility, na.rm = TRUE),
+    .groups = "drop"
+  ) %>%
+  ggplot(aes(x = year, y = avg_fer, color = region)) +
+  geom_line(linewidth = 1.2) +
+  theme_minimal() +
+  labs(
+    title = "Fertility Rate Over Time by Region",
+    x = "Year",
+    y = "Avg Fertility Rate (births per woman)",
+    color = "Region"
+  ) + scale_color_brewer(palette = "Set2")
+```
+
+The correlation heatmap (Figure \@ref(fig:corrplot)) shows strong negative correlations between fertility rate and all levels of female educational attainment. Fertility is also negatively associated with GDP per capita, urbanisation, and contraceptive prevalence. Fertility is positively correlated with both GII and MMR and negatively correlated with PR_F. Additionally, strong multicollinearity is observed between different education variables and GDP/log-GDP, reinforcing the importance of careful variable selection in modelling steps. Together, these indicators highlight that gender inequality, health system strength, and women's empowerment are jointly linked to fertility variation across countries.
+
+```{r corrplot, echo=FALSE, fig.cap="Correlation heatmap between variables", fig.pos="H", fig.width=5, fig.height=3}
+df_corr <- df %>%
+  filter(year == 2023) %>%
+  select(fertility, edu_upper, edu_lower, edu_tertiary,
+         gdp, urban, female_labor, contraceptive, log_gdp,
+         gii, mmr, pr_f) %>%
+  drop_na()
+
+cor_matrix <- cor(df_corr, use = "complete.obs")
+
+corrplot(cor_matrix, method = "color", type = "upper", 
+         tl.col = "black", tl.cex = 0.7)
+```
+
+The comparison between fertility rate and GDP (left of Figure \@ref(fig:transform)) versus log-transformed GDP (right of Figure \@ref(fig:transform)) reveals that the raw GDP values are highly skewed, leading to a non-linear and heteroscedastic relationship with fertility. In contrast, the log(GDP) transformation produces a much more linear and evenly spread association, with a clearer negative slope. This suggests that log-transformed GDP is a more appropriate predictor in regression models analysing fertility, as it better captures the diminishing marginal effects of economic development on fertility.
+
+```{r transform, echo=FALSE, fig.cap="Comparison between fertility rate and GDP versus log-transformed GDP", fig.pos="H", fig.width=7, fig.height=3}
+# Fertility vs GDP
+p1 <- df %>%
+  filter(year == 2023, !is.na(gdp), !is.na(fertility)) %>%
+  ggplot(aes(x = gdp, y = fertility)) +
+  geom_point(color = "#66C2A5", alpha = 0.6) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, color = "black", linetype = "dashed") +
+  scale_x_continuous(labels = scales::label_number(scale_cut = scales::cut_short_scale())) +
+  theme_minimal() +
+  labs(
+    title = "Fertility vs. GDP",
+    x = "GDP per capita (US$)",
+    y = "Fertility Rate"
+  ) 
+
+# Fertility vs log(GDP)
+p2 <- df %>%
+  filter(year == 2023, !is.na(log_gdp), !is.na(fertility)) %>%
+  ggplot(aes(x = log_gdp, y = fertility)) +
+  geom_point(color = "#66C2A5", alpha = 0.6) +
+  geom_smooth(method = "lm", formula = y~x, se = FALSE, color = "black", linetype = "dashed") +
+  theme_minimal() +
+  labs(
+    title = "Fertility vs. log(GDP)",
+    x = "Log GDP per capita",
+    y = "Fertility Rate"
+  )
+
+gridExtra::grid.arrange(p1, p2, ncol = 2)
+```
