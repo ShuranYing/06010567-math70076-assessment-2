@@ -38,10 +38,3 @@ install.packages(c("rmarkdown", "knitr", "kableExtra", "WDI", "tidyverse", "read
 ```r
 source("make.R")
 ```
-
-### GitHub Commit
-Tagged release for final submission: [🔗 Click here](https://github.com/YOUR-USERNAME/YOUR-REPO/tree/v1.0)
-
-## ✍️ Author
-Imperial CID: `YOURCID`  
-MSc Statistics (Data Science), Imperial College London
